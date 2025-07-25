@@ -8,7 +8,7 @@ open LeanRPC.Protocol
 open LeanRPC.Tests
 
 -- Test JsonRPCID serialization
-def testJsonRPCIDSerialization (_ : Unit) : TestResult :=
+def testJsonRPCIDSerialization (_ : Unit) : IO TestResult := do
   let idStr := JsonRPCID.str "test123"
   let idNum := JsonRPCID.num 42
   let idNull := JsonRPCID.null
@@ -19,12 +19,12 @@ def testJsonRPCIDSerialization (_ : Unit) : TestResult :=
 
   match Lean.fromJson? jsonStr, Lean.fromJson? jsonNum, Lean.fromJson? jsonNull with
   | .ok (JsonRPCID.str "test123"), .ok (JsonRPCID.num 42), .ok JsonRPCID.null =>
-    assert true "JsonRPCID serialization works"
+    return assert true "JsonRPCID serialization works"
   | _, _, _ =>
-    assert false "JsonRPCID serialization failed"
+    return assert false "JsonRPCID serialization failed"
 
 -- Test JsonRPCRequest creation and validation
-def testJsonRPCRequestValidation (_ : Unit) : TestResult :=
+def testJsonRPCRequestValidation (_ : Unit) : IO TestResult := do
   let validReq : JsonRPCRequest := {
     method := "add",
     params? := some (.arr #[.num 1, .num 2]),
@@ -43,12 +43,12 @@ def testJsonRPCRequestValidation (_ : Unit) : TestResult :=
 
   match validReq.validate, invalidReq.validate, notificationReq.validate with
   | .ok (), .error _, .error _ =>
-    assert true "Request validation works correctly"
+    return assert true "Request validation works correctly"
   | _, _, _ =>
-    assert false "Request validation failed"
+    return assert false "Request validation failed"
 
 -- Test JsonRPCResponse creation
-def testJsonRPCResponseCreation (_ : Unit) : TestResult :=
+def testJsonRPCResponseCreation (_ : Unit) : IO TestResult := do
   let successResp := JsonRPCResponse.success (.num 42) (JsonRPCID.str "test")
   let errorResp := JsonRPCResponse.error JsonRPCErrorCode.methodNotFound "Method not found" (JsonRPCID.str "test")
 
@@ -56,12 +56,12 @@ def testJsonRPCResponseCreation (_ : Unit) : TestResult :=
   let hasError := errorResp.error?.isSome && errorResp.result?.isNone
 
   if hasResult && hasError then
-    assert true "Response creation works"
+    return assert true "Response creation works"
   else
-    assert false "Response creation failed"
+    return assert false "Response creation failed"
 
 -- Test JSON serialization roundtrip
-def testJsonRoundtrip (_ : Unit) : TestResult :=
+def testJsonRoundtrip (_ : Unit) : IO TestResult := do
   let originalReq : JsonRPCRequest := {
     method := "multiply",
     params? := some (.arr #[.num 5, .num 6]),
@@ -74,15 +74,15 @@ def testJsonRoundtrip (_ : Unit) : TestResult :=
     if originalReq.method == parsedReq.method &&
        originalReq.params? == parsedReq.params? &&
        originalReq.id? == parsedReq.id? then
-      assert true "JSON roundtrip successful"
+      return assert true "JSON roundtrip successful"
     else
-      assert false "JSON roundtrip data mismatch"
+      return assert false "JSON roundtrip data mismatch"
   | .error msg =>
-    assert false s!"JSON parsing failed: {msg}"
+    return assert false s!"JSON parsing failed: {msg}"
 
 -- Run all protocol tests
 def runProtocolTests : IO Unit := do
-  runTests [
+  runTests #[
     ("JsonRPCID Serialization", testJsonRPCIDSerialization),
     ("JsonRPCRequest Validation", testJsonRPCRequestValidation),
     ("JsonRPCResponse Creation", testJsonRPCResponseCreation),

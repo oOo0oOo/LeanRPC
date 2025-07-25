@@ -121,7 +121,7 @@ def testHandlerExecution (_ : Unit) : IO TestResult := do
   | none => return assert false "Handler not found in registry"
 
 -- Test list methods functionality (pure test)
-def testListMethods (_ : Unit) : TestResult :=
+def testListMethods (_ : Unit) : IO TestResult := do
   let registry : MethodRegistry := Std.HashMap.emptyWithCapacity 16
   let handler : MethodHandler := fun _ id => pure (JsonRPCResponse.success (.str "test") id)
   let registry1 := registerMethod registry "method1" handler
@@ -129,17 +129,20 @@ def testListMethods (_ : Unit) : TestResult :=
 
   let methods := rpc_listMethods registry2
   if methods.contains "method1" && methods.contains "method2" && methods.length == 2 then
-    assert true "List methods works correctly"
+    return assert true "List methods works correctly"
   else
-    assert false "List methods failed"
+    return assert false "List methods failed"
 
 -- Run all registry tests
 def runRegistryTests : IO Unit := do
-  runTest "List Methods" testListMethods
   runIOTest "Method Registration" testMethodRegistration
   runIOTest "Function Registration" testFunctionRegistration
   runIOTest "Multi-Argument Function" testMultiArgFunction
   runIOTest "Handler Execution" testHandlerExecution
   runIOTest "Serialized Argument" testComplexSerializedArg
+
+  runTests #[
+    ("List Methods", testListMethods)
+  ]
 
 end LeanRPC.Tests.Registry

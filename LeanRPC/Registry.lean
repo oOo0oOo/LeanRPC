@@ -57,6 +57,8 @@ def createHandler {α : Type} [ToHandler α] (f : α) : MethodHandler := ToHandl
 
 abbrev MethodRegistry := Std.HashMap String MethodHandler
 
+def mkMethodRegistry : MethodRegistry := Std.HashMap.emptyWithCapacity 16
+
 def registerMethod (registry : MethodRegistry) (method : String) (handler : MethodHandler) : MethodRegistry :=
   registry.insert method handler
 
