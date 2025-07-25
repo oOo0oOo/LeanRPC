@@ -1,0 +1,23 @@
+name = "LeanRPC"
+version = "0.1.0"
+defaultTargets = ["leanrpc"]
+testDriver = "tests"
+
+[[require]]
+name = "LeanSerial"
+git = "https://github.com/oOo0oOo/LeanSerial.git"
+rev = "main"
+
+[[lean_lib]]
+name = "LeanRPC"
+
+[[lean_lib]]
+name = "Tests"
+
+[[lean_exe]]
+name = "leanrpc"
+root = "Main"
+
+[[lean_exe]]
+name = "tests"
+root = "Tests.TestRunner"

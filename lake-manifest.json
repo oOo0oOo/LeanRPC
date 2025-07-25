@@ -1,0 +1,15 @@
+{"version": "1.1.0",
+ "packagesDir": ".lake/packages",
+ "packages":
+ [{"url": "https://github.com/oOo0oOo/LeanSerial.git",
+   "type": "git",
+   "subDir": null,
+   "scope": "",
+   "rev": "3dfd704dd401857bfadb2de99441cf13258e2c23",
+   "name": "LeanSerial",
+   "manifestFile": "lake-manifest.json",
+   "inputRev": "main",
+   "inherited": false,
+   "configFile": "lakefile.toml"}],
+ "name": "LeanRPC",
+ "lakeDir": ".lake"}
