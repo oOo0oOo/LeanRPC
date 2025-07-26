@@ -60,7 +60,7 @@ def startRPCServer (config : ServerConfig) (builder : MethodRegistry → MethodR
   IO.println "Press Ctrl+C to stop the server."
 
   -- Simple blocking mechanism - wait indefinitely
-  let waitTask ← IO.asTask (IO.sleep 2147483647) -- Sleep for a very long time
+  let waitTask ← IO.asTask (IO.sleep 2147483647)
   let _ ← IO.wait waitTask
 
 end LeanRPC.Server

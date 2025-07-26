@@ -5,7 +5,7 @@
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "3dfd704dd401857bfadb2de99441cf13258e2c23",
+   "rev": "c5ada6f666fb8112f16f02f8a3b9cf5e7a9fb0a9",
    "name": "LeanSerial",
    "manifestFile": "lake-manifest.json",
    "inputRev": "main",

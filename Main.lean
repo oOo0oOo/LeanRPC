@@ -1,6 +1,5 @@
 import LeanRPC
 
-open Lean Elab Command
 open LeanRPC.HTTP
 open LeanRPC.Server
 
@@ -13,11 +12,11 @@ def fibonacci (n : Nat) : IO Nat := do
     | n + 2 => fib n + fib (n + 1)
   pure (fib n)
 
--- Compile time initialization of RPC handlers
+-- Initialize after the RPC functions are registered
 init_RPC
 
 def main : IO Unit := do
-  IO.println "Try:\ncurl -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\": \"2.0\", \"method\": \"fibonacci\", \"params\": [{\"root\": 10, \"objects\": []}], \"id\": 1}' http://127.0.0.1:8080"
+  IO.println "Try:\ncurl -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\": \"2.0\", \"method\": \"fibonacci\", \"params\": [10], \"id\": 1}' http://127.0.0.1:8080"
 
   -- Start the RPC server
   let config : ServerConfig := {
