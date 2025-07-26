@@ -2,6 +2,7 @@ import Tests.ProtocolTests
 import Tests.RegistryTests
 import Tests.AttributeTests
 import Tests.HTTPTests
+import Tests.ServerTests
 
 def main : IO Unit := do
   IO.println "=== LeanRPC Tests ===\n"
@@ -9,3 +10,4 @@ def main : IO Unit := do
   LeanRPC.Tests.Registry.runRegistryTests
   LeanRPC.Tests.Attribute.runAttributeTests
   LeanRPC.Tests.HTTP.runHTTPTests
+  LeanRPC.Tests.Server.runServerTests

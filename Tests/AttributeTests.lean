@@ -35,7 +35,7 @@ initialize_rpc_handlers
 
 -- Test if the registry was built correctly
 def testRegistryInitialization (_ : Unit) : IO TestResult := do
-  let emptyRegistry : MethodRegistry := Std.HashMap.emptyWithCapacity 16
+  let emptyRegistry := mkMethodRegistry
   let registry := buildRpcRegistry emptyRegistry
   let methods := rpc_listMethods registry
 
@@ -49,7 +49,7 @@ def testRegistryInitialization (_ : Unit) : IO TestResult := do
 
 -- Test running the handlers
 def testRpcAddition (_ : Unit) : IO TestResult := do
-  let emptyRegistry : MethodRegistry := Std.HashMap.emptyWithCapacity 16
+  let emptyRegistry := mkMethodRegistry
   let registry := buildRpcRegistry emptyRegistry
 
   let param1 := LeanSerial.serialize (33 : Nat)
@@ -70,7 +70,7 @@ def testRpcAddition (_ : Unit) : IO TestResult := do
   | none => return assert false "Addition handler not found"
 
 def testRpcCombos (_ : Unit) : IO TestResult := do
-  let emptyRegistry : MethodRegistry := Std.HashMap.emptyWithCapacity 16
+  let emptyRegistry := mkMethodRegistry
   let registry := buildRpcRegistry emptyRegistry
 
   let serializedNames : Lean.Json := LeanSerial.serialize ["Alice", "Bob", "Charlie"]
