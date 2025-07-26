@@ -17,14 +17,11 @@ def fibonacci (n : Nat) : IO Nat := do
 init_RPC
 
 def main : IO Unit := do
+  IO.println "Try:\ncurl -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\": \"2.0\", \"method\": \"fibonacci\", \"params\": [{\"root\": 10, \"objects\": []}], \"id\": 1}' http://127.0.0.1:8080"
+
   -- Start the RPC server
   let config : ServerConfig := {
     host := "127.0.0.1",
     port := 8080
   }
-  let _stopServer ← startRPCServer config buildRPC  -- buildRPC is created during init_RPC
-
-  IO.println "Try:\ncurl -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\": \"2.0\", \"method\": \"fibonacci\", \"params\": [{\"root\": 10, \"objects\": []}], \"id\": 1}' http://127.0.0.1:8080"
-
-  -- Stop the server by calling:
-  -- _stopServer
+  startRPCServer config buildRPC  -- buildRPC is created during init_RPC

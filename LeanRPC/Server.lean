@@ -35,12 +35,11 @@ def createJsonRPCHandler (registry : MethodRegistry) : String → IO String := f
           let response ← handler req.params? id
           pure (Lean.toJson response).compress
 
-def startRPCServer (config : ServerConfig) (builder : MethodRegistry → MethodRegistry) : IO (IO Unit) := do
+def launchRPCServer (config : ServerConfig) (builder : MethodRegistry → MethodRegistry) : IO (IO Unit) := do
   let baseRegistry := mkMethodRegistry
   let registry := builder baseRegistry
   let fullRegistryRef ← IO.mkRef (Option.none : Option MethodRegistry)
 
-  -- Add built-in methods
   let listMethods : IO (List String) := do
     match ← fullRegistryRef.get with
     | none => pure []
@@ -51,12 +50,17 @@ def startRPCServer (config : ServerConfig) (builder : MethodRegistry → MethodR
 
   let jsonHandler := createJsonRPCHandler fullRegistry
   let stopFlag ← IO.mkRef false
-  let serverTask ← IO.asTask (startJsonRPCServer { port := config.port, host := config.host, maxBodySize := config.maxBodySize } jsonHandler stopFlag)
+  let _serverTask ← IO.asTask (startJsonRPCServer { port := config.port, host := config.host, maxBodySize := config.maxBodySize } jsonHandler stopFlag)
 
-  let stopServer : IO Unit := do
-    stopFlag.set true
-    IO.cancel serverTask
+  pure (stopFlag.set true)
 
-  pure stopServer
+def startRPCServer (config : ServerConfig) (builder : MethodRegistry → MethodRegistry) : IO Unit := do
+  let _stopServer ← launchRPCServer config builder
+
+  IO.println "Press Ctrl+C to stop the server."
+
+  -- Simple blocking mechanism - wait indefinitely
+  let waitTask ← IO.asTask (IO.sleep 2147483647) -- Sleep for a very long time
+  let _ ← IO.wait waitTask
 
 end LeanRPC.Server

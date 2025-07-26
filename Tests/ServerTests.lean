@@ -154,7 +154,7 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
   }
 
   -- Start the RPC server in a separate task
-  let stopServer ← LeanRPC.Server.startRPCServer config buildRPC
+  let stopServer ← LeanRPC.Server.launchRPCServer config buildRPC
 
   -- Give server time to start
   IO.sleep 500
