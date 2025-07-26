@@ -205,7 +205,7 @@ def testFullServerIntegration (_ : Unit) : IO TestResult := do
   let registryWithHandlers := registerFunction (registerFunction (registerFunction registry "add" addFunc) "getTime" getTimeFunc) "echo" echoFunc
 
   -- Create a JSON-RPC handler that processes requests
-  let jsonRpcHandler : String → IO String := fun jsonRequest => do
+  let jsonRPCHandler : String → IO String := fun jsonRequest => do
     -- Parse the JSON-RPC request
     match Lean.Json.parse jsonRequest with
     | .error err => pure (Lean.toJson (JsonRPCResponse.error
@@ -243,7 +243,7 @@ def testFullServerIntegration (_ : Unit) : IO TestResult := do
 
   -- Start the server in a separate task
   let severStopFlag ← IO.mkRef false
-  let serverTask ← IO.asTask (startJsonRpcServer testConfig jsonRpcHandler severStopFlag)
+  let serverTask ← IO.asTask (startJsonRPCServer testConfig jsonRPCHandler severStopFlag)
 
   -- Give the server time to start up
   IO.sleep 500

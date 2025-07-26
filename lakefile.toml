@@ -15,7 +15,7 @@ name = "LeanRPC"
 name = "Tests"
 
 [[lean_exe]]
-name = "leanrpc"
+name = "Main"
 root = "Main"
 
 [[lean_exe]]

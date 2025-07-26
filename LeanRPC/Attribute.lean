@@ -6,7 +6,7 @@ namespace LeanRPC.Attribute
 
 open Lean Elab Command Meta
 
-def parseRpcArgs (_declName : Name) (_stx : Syntax) : AttrM Unit := do
+def parseRPCArgs (_declName : Name) (_stx : Syntax) : AttrM Unit := do
   return ()
 
 def getFunctionName (declName : Name) : String :=
@@ -15,7 +15,7 @@ def getFunctionName (declName : Name) : String :=
 initialize rpcFunctions : IO.Ref (Array Name) ← IO.mkRef #[]
 
 /-- The @[rpc] attribute implementation -/
-def registerRpcFunction (declName : Name) (_config : Unit) : AttrM Unit := do
+def registerRPCFunction (declName : Name) (_config : Unit) : AttrM Unit := do
   let rpcFuns ← liftM (rpcFunctions.get : IO _)
   liftM (rpcFunctions.set (rpcFuns.push declName) : IO _)
 
@@ -23,12 +23,12 @@ initialize rpcAttribute : ParametricAttribute Unit ←
   registerParametricAttribute {
     name := `rpc
     descr := "Mark a function as available for RPC calls"
-    getParam := parseRpcArgs
-    afterSet := registerRpcFunction
+    getParam := parseRPCArgs
+    afterSet := registerRPCFunction
   }
 
-/-- Build the RPC method registry from registered functions -/
-elab "initialize_rpc_handlers" : command => do
+/-- Build the RPC registry from functions marked with @[rpc] attribute -/
+elab "init_RPC" : command => do
   let rpcFuns ← liftTermElabM (rpcFunctions.get : IO _)
 
   let bodyExpr ← if rpcFuns.isEmpty then
@@ -42,7 +42,7 @@ elab "initialize_rpc_handlers" : command => do
       registryExpr ← `(LeanRPC.Registry.registerFunction $registryExpr $methodNameLit $funcIdent)
     pure registryExpr
 
-  let declName := `buildRpcRegistry
+  let declName := `buildRPC
   let levelParams := []
 
   liftTermElabM do

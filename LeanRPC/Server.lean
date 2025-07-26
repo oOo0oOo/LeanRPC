@@ -10,7 +10,7 @@ open LeanRPC.HTTP
 open LeanRPC.Protocol
 open LeanRPC.Registry
 
-def createJsonRpcHandler (registry : MethodRegistry) : String → IO String := fun jsonRequest => do
+def createJsonRPCHandler (registry : MethodRegistry) : String → IO String := fun jsonRequest => do
   match Lean.Json.parse jsonRequest with
   | .error err =>
     let response := JsonRPCResponse.error JsonRPCErrorCode.parseError s!"Parse error: {err}" JsonRPCID.null
@@ -49,9 +49,9 @@ def startRPCServer (config : ServerConfig) (builder : MethodRegistry → MethodR
   let fullRegistry := registerFunction registry "rpc_listMethods" listMethods
   fullRegistryRef.set (some fullRegistry)
 
-  let jsonHandler := createJsonRpcHandler fullRegistry
+  let jsonHandler := createJsonRPCHandler fullRegistry
   let stopFlag ← IO.mkRef false
-  let serverTask ← IO.asTask (startJsonRpcServer { port := config.port, host := config.host, maxBodySize := config.maxBodySize } jsonHandler stopFlag)
+  let serverTask ← IO.asTask (startJsonRPCServer { port := config.port, host := config.host, maxBodySize := config.maxBodySize } jsonHandler stopFlag)
 
   let stopServer : IO Unit := do
     stopFlag.set true

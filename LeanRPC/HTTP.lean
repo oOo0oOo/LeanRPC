@@ -97,7 +97,7 @@ def handleConnection (jsonHandler : String → IO String) (client : Socket.Clien
 
   try discard <| (← client.shutdown).block catch _ => pure ()
 
-def startJsonRpcServer (config : ServerConfig) (jsonHandler : String → IO String) (stopFlag : IO.Ref Bool) : IO Unit := do
+def startJsonRPCServer (config : ServerConfig) (jsonHandler : String → IO String) (stopFlag : IO.Ref Bool) : IO Unit := do
   let server ← Socket.Server.mk
 
   match config.getServerAddress with

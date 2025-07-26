@@ -16,13 +16,13 @@ open LeanRPC.Registry
 open LeanRPC.Protocol
 open LeanRPC.HTTP
 
--- Test createJsonRpcHandler with valid requests
-def testCreateJsonRpcHandlerValid (_ : Unit) : IO TestResult := do
+-- Test createJsonRPCHandler with valid requests
+def testCreateJsonRPCHandlerValid (_ : Unit) : IO TestResult := do
   let registry := mkMethodRegistry
   let addFunc : Nat → Nat → IO Nat := fun a b => pure (a + b)
   let registryWithAdd := registerFunction registry "add" addFunc
 
-  let handler := createJsonRpcHandler registryWithAdd
+  let handler := createJsonRPCHandler registryWithAdd
 
   -- Test valid JSON-RPC request
   let param1 := LeanSerial.serialize (5 : Nat)
@@ -46,10 +46,10 @@ def testCreateJsonRpcHandlerValid (_ : Unit) : IO TestResult := do
         | .error err => return assert false s!"Result deserialization failed: {err}"
       | none => return assert false "No result in response"
 
--- Test createJsonRpcHandler with parse error
-def testCreateJsonRpcHandlerParseError (_ : Unit) : IO TestResult := do
+-- Test createJsonRPCHandler with parse error
+def testCreateJsonRPCHandlerParseError (_ : Unit) : IO TestResult := do
   let registry := mkMethodRegistry
-  let handler := createJsonRpcHandler registry
+  let handler := createJsonRPCHandler registry
 
   let invalidJson := "{invalid json"
   let responseStr ← handler invalidJson
@@ -68,10 +68,10 @@ def testCreateJsonRpcHandlerParseError (_ : Unit) : IO TestResult := do
           return assert false s!"Wrong error code: {error.code}"
       | none => return assert false "Expected error response"
 
--- Test createJsonRpcHandler with invalid request
-def testCreateJsonRpcHandlerInvalidRequest (_ : Unit) : IO TestResult := do
+-- Test createJsonRPCHandler with invalid request
+def testCreateJsonRPCHandlerInvalidRequest (_ : Unit) : IO TestResult := do
   let registry := mkMethodRegistry
-  let handler := createJsonRpcHandler registry
+  let handler := createJsonRPCHandler registry
 
   -- Valid JSON but invalid JSON-RPC request (missing jsonrpc field)
   let invalidRequest := "{\"method\":\"test\",\"id\":1}"
@@ -91,10 +91,10 @@ def testCreateJsonRpcHandlerInvalidRequest (_ : Unit) : IO TestResult := do
           return assert false s!"Wrong error code: {error.code}"
       | none => return assert false "Expected error response"
 
--- Test createJsonRpcHandler with method not found
-def testCreateJsonRpcHandlerMethodNotFound (_ : Unit) : IO TestResult := do
+-- Test createJsonRPCHandler with method not found
+def testCreateJsonRPCHandlerMethodNotFound (_ : Unit) : IO TestResult := do
   let registry := mkMethodRegistry
-  let handler := createJsonRpcHandler registry
+  let handler := createJsonRPCHandler registry
 
   let request := "{\"jsonrpc\":\"2.0\",\"method\":\"nonexistent\",\"id\":1}"
   let responseStr ← handler request
@@ -113,10 +113,10 @@ def testCreateJsonRpcHandlerMethodNotFound (_ : Unit) : IO TestResult := do
           return assert false s!"Wrong error code: {error.code}"
       | none => return assert false "Expected error response"
 
--- Test createJsonRpcHandler with request validation error
-def testCreateJsonRpcHandlerValidationError (_ : Unit) : IO TestResult := do
+-- Test createJsonRPCHandler with request validation error
+def testCreateJsonRPCHandlerValidationError (_ : Unit) : IO TestResult := do
   let registry := mkMethodRegistry
-  let handler := createJsonRpcHandler registry
+  let handler := createJsonRPCHandler registry
 
   -- Request with invalid jsonrpc version
   let request := "{\"jsonrpc\":\"1.0\",\"method\":\"test\",\"id\":1}"
@@ -154,17 +154,17 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
   }
 
   -- Start the RPC server in a separate task
-  let stopServer ← LeanRPC.Server.startRPCServer config buildRpcRegistry
+  let stopServer ← LeanRPC.Server.startRPCServer config buildRPC
 
   -- Give server time to start
-  IO.sleep 1000
+  IO.sleep 500
 
   try
-    -- Test 1: Use testRpcAdd function from AttributeTests (available via initialize_rpc_handlers)
+    -- Test 1: Use testRPCAdd function from AttributeTests (available via init_RPC)
     let param1 := LeanSerial.serialize (42 : Nat)
     let param2 := LeanSerial.serialize (17 : Nat)
     let params := Lean.Json.arr #[param1, param2]
-    let addRequest := "{\"jsonrpc\":\"2.0\",\"method\":\"testRpcAdd\",\"params\":" ++ params.compress ++ ",\"id\":1}"
+    let addRequest := "{\"jsonrpc\":\"2.0\",\"method\":\"testRPCAdd\",\"params\":" ++ params.compress ++ ",\"id\":1}"
 
     let addSuccess ← match ← makeJsonHttpRequest config addRequest with
     | .ok response =>
@@ -185,11 +185,11 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
       | .error _ => pure false
     | .error _ => pure false
 
-    -- Test 2: Use testRpcNumCombos function from AttributeTests
+    -- Test 2: Use testRPCNumCombos function from AttributeTests
     let names := LeanSerial.serialize (["Alice", "Bob"] : List String)
     let lastNames := LeanSerial.serialize (["Smith", "Johnson", "Williams"] : List String)
     let combosParams := Lean.Json.arr #[names, lastNames]
-    let combosRequest := "{\"jsonrpc\":\"2.0\",\"method\":\"testRpcNumCombos\",\"params\":" ++ combosParams.compress ++ ",\"id\":2}"
+    let combosRequest := "{\"jsonrpc\":\"2.0\",\"method\":\"testRPCNumCombos\",\"params\":" ++ combosParams.compress ++ ",\"id\":2}"
 
     let combosSuccess ← match ← makeJsonHttpRequest config combosRequest with
     | .ok response =>
@@ -225,7 +225,7 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
             | some result =>
               match LeanSerial.deserialize result with
               | .ok (methods : List String) =>
-                pure (methods.contains "testRpcAdd" && methods.contains "testRpcNumCombos" && methods.contains "rpc_listMethods")
+                pure (methods.contains "testRPCAdd" && methods.contains "testRPCNumCombos" && methods.contains "rpc_listMethods")
               | _ => pure false
             | none => pure false
           | .error _ => pure false
@@ -235,8 +235,8 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
 
     -- Collect results
     let allTests := [
-      ("testRpcAdd function", addSuccess),
-      ("testRpcNumCombos function", combosSuccess),
+      ("testRPCAdd function", addSuccess),
+      ("testRPCNumCombos function", combosSuccess),
       ("List methods", listSuccess)
     ]
 
@@ -256,11 +256,11 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
 -- Run all server tests
 def runServerTests : IO Unit := do
   runTests #[
-    ("CreateJsonRpcHandler Valid", testCreateJsonRpcHandlerValid),
-    ("CreateJsonRpcHandler Parse Error", testCreateJsonRpcHandlerParseError),
-    ("CreateJsonRpcHandler Invalid Request", testCreateJsonRpcHandlerInvalidRequest),
-    ("CreateJsonRpcHandler Method Not Found", testCreateJsonRpcHandlerMethodNotFound),
-    ("CreateJsonRpcHandler Validation Error", testCreateJsonRpcHandlerValidationError),
+    ("CreateJsonRPCHandler Valid", testCreateJsonRPCHandlerValid),
+    ("CreateJsonRPCHandler Parse Error", testCreateJsonRPCHandlerParseError),
+    ("CreateJsonRPCHandler Invalid Request", testCreateJsonRPCHandlerInvalidRequest),
+    ("CreateJsonRPCHandler Method Not Found", testCreateJsonRPCHandlerMethodNotFound),
+    ("CreateJsonRPCHandler Validation Error", testCreateJsonRPCHandlerValidationError),
     ("Real Use Case Integration", testRealUseCaseIntegration)
   ]
 
