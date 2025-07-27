@@ -1,7 +1,7 @@
 import LeanRPC.Registry
 import Tests.TestFramework
 import Lean.Data.Json
-import LeanSerial
+import LeanSerde
 
 namespace LeanRPC.Tests.Registry
 
@@ -44,7 +44,7 @@ def testFunctionRegistration (_ : Unit) : IO TestResult := do
       let response ← h none (JsonRPCID.str "test")
       match response.result? with
       | some result => do
-        match LeanSerial.deserialize result with
+        match LeanSerde.deserialize result with
         | .ok (42 : Nat) => return assert true "Function registration and execution works"
         | .ok val => return assert false s!"Function execution returned wrong value: {val}"
         | .error err => return assert false s!"Function execution deserialization failed: {err}"
@@ -62,16 +62,16 @@ def testMultiArgFunction (_ : Unit) : IO TestResult := do
 
   match updatedRegistry.get? "addFive" with
   | some h => do
-    let p1: Lean.Json := LeanSerial.serialize (1 : Nat)
-    let p2: Lean.Json := LeanSerial.serialize (2 : Nat)
-    let p3: Lean.Json := LeanSerial.serialize (3 : Nat)
-    let p4: Lean.Json := LeanSerial.serialize (4 : Nat)
-    let p5: Lean.Json := LeanSerial.serialize (5 : Nat)
+    let p1: Lean.Json := LeanSerde.serialize (1 : Nat)
+    let p2: Lean.Json := LeanSerde.serialize (2 : Nat)
+    let p3: Lean.Json := LeanSerde.serialize (3 : Nat)
+    let p4: Lean.Json := LeanSerde.serialize (4 : Nat)
+    let p5: Lean.Json := LeanSerde.serialize (5 : Nat)
     let params := Lean.Json.arr #[ p1, p2, p3, p4, p5 ]
     let response ← h (some params) (JsonRPCID.str "test")
     match response.result? with
     | some result => do
-      match LeanSerial.deserialize result with
+      match LeanSerde.deserialize result with
       | .ok (15 : Nat) => return assert true "Multi-argument function execution works"
       | .ok val => return assert false s!"Multi-argument function returned wrong value: {val}"
       | .error err => return assert false s!"Multi-argument function deserialization failed: {err}"
@@ -89,12 +89,12 @@ def testComplexSerializedArg (_ : Unit) : IO TestResult := do
   match updatedRegistry.get? "countNames" with
   | some h => do
     let names := [Lean.Name.mkSimple "foo", Lean.Name.mkSimple "bar", Lean.Name.mkSimple "baz"]
-    let serializedNames: Lean.Json := LeanSerial.serialize names
+    let serializedNames: Lean.Json := LeanSerde.serialize names
     let params := Lean.Json.arr #[ serializedNames ]
     let response ← h (some params) (JsonRPCID.str "test")
     match response.result? with
     | some result => do
-      match LeanSerial.deserialize result with
+      match LeanSerde.deserialize result with
       | .ok (3 : Nat) => return assert true "Complex serialized argument execution works"
       | .ok val => return assert false s!"Complex argument function returned wrong value: {val}"
       | .error err => return assert false s!"Complex argument function deserialization failed: {err}"
@@ -113,7 +113,7 @@ def testHandlerExecution (_ : Unit) : IO TestResult := do
     let response ← h none (JsonRPCID.str "test")
     match response.result? with
     | some result => do
-      match LeanSerial.deserialize result with
+      match LeanSerde.deserialize result with
       | .ok (42 : Nat) => return assert true "Handler execution works"
       | .ok val => return assert false s!"Handler execution returned wrong value: {val}"
       | .error err => return assert false s!"Handler execution deserialization failed: {err}"

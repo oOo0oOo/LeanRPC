@@ -2,7 +2,7 @@ import LeanRPC.Attribute
 import LeanRPC.Registry
 import Tests.TestFramework
 import Lean.Elab.Command
-import LeanSerial
+import LeanSerde
 
 namespace LeanRPC.Tests.Attribute
 
@@ -52,8 +52,8 @@ def testRPCAddition (_ : Unit) : IO TestResult := do
   let emptyRegistry := mkMethodRegistry
   let registry := buildRPC emptyRegistry
 
-  let param1 := LeanSerial.serialize (33 : Nat)
-  let param2 := LeanSerial.serialize (11 : Nat)
+  let param1 := LeanSerde.serialize (33 : Nat)
+  let param2 := LeanSerde.serialize (11 : Nat)
   let params := Lean.Json.arr #[param1, param2]
 
   let addHandler := registry.get? "testRPCAdd"
@@ -62,7 +62,7 @@ def testRPCAddition (_ : Unit) : IO TestResult := do
       let response ← handler (some params) (LeanRPC.Protocol.JsonRPCID.num 1)
       match response.result? with
       | some result => do
-        match LeanSerial.deserialize result with
+        match LeanSerde.deserialize result with
         | .ok (44 : Nat) => return assert true "Addition handler works"
         | .ok val => return assert false s!"Addition handler returned wrong value: {val}"
         | .error err => return assert false s!"Addition handler deserialization failed: {err}"
@@ -73,8 +73,8 @@ def testRPCCombos (_ : Unit) : IO TestResult := do
   let emptyRegistry := mkMethodRegistry
   let registry := buildRPC emptyRegistry
 
-  let serializedNames : Lean.Json := LeanSerial.serialize ["Alice", "Bob", "Charlie"]
-  let serializedCats : Lean.Json := LeanSerial.serialize [3, 4, 5]
+  let serializedNames : Lean.Json := LeanSerde.serialize ["Alice", "Bob", "Charlie"]
+  let serializedCats : Lean.Json := LeanSerde.serialize [3, 4, 5]
 
   let params := Lean.Json.arr #[serializedNames, serializedCats]
 
@@ -84,7 +84,7 @@ def testRPCCombos (_ : Unit) : IO TestResult := do
       let response ← handler (some params) (LeanRPC.Protocol.JsonRPCID.num 2)
       match response.result? with
       | some result => do
-        match LeanSerial.deserialize result with
+        match LeanSerde.deserialize result with
         | .ok (9 : Nat) => return assert true "Length handler works"
         | .ok val => return assert false s!"Length handler returned wrong value: {val}"
         | .error err => return assert false s!"Length handler deserialization failed: {err}"

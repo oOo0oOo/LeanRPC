@@ -4,8 +4,8 @@ defaultTargets = ["leanrpc"]
 testDriver = "tests"
 
 [[require]]
-name = "LeanSerial"
-git = "https://github.com/oOo0oOo/LeanSerial.git"
+name = "LeanSerde"
+git = "https://github.com/oOo0oOo/LeanSerde.git"
 rev = "main"
 
 [[lean_lib]]

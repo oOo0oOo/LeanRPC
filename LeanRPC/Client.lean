@@ -1,6 +1,6 @@
 import LeanRPC.HTTP
 import LeanRPC.Protocol
-import LeanSerial
+import LeanSerde
 import Lean.Data.Json
 
 namespace LeanRPC.Client
@@ -15,7 +15,7 @@ private def extractResponseBody (httpResponse : String) : Except String String :
   else
     .ok (parts.drop 1 |> String.intercalate "\r\n\r\n")
 
-def callRPC [LeanSerial.Serializable β]
+def callRPC [LeanSerde.Serializable β]
     (config : ServerConfig) (method : String) (params : List Lean.Json) (id : JsonRPCID := JsonRPCID.num 1) : IO (Except String β) := do
   try
     let request : JsonRPCRequest := {
@@ -40,7 +40,7 @@ def callRPC [LeanSerial.Serializable β]
       match rpcResponse.result? with
       | none => throw "No result in response"
       | some resultJson =>
-        LeanSerial.deserialize resultJson
+        LeanSerde.deserialize resultJson
 
     return result
   catch e =>

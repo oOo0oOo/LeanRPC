@@ -1,5 +1,5 @@
 import LeanRPC.Protocol
-import LeanSerial
+import LeanSerde
 import Std.Data.HashMap
 
 namespace LeanRPC.Registry
@@ -15,19 +15,19 @@ def Except.toIO {α : Type} : Except String α → IO α
 class HandlerBuilder (α : Type) where
   build : α → List Lean.Json → IO Lean.Json
 
-instance [LeanSerial.Serializable β] : HandlerBuilder (IO β) where
+instance [LeanSerde.Serializable β] : HandlerBuilder (IO β) where
   build f params :=
     if params.isEmpty then
-      LeanSerial.serialize <$> f
+      LeanSerde.serialize <$> f
     else
       throw $ IO.userError "Too many parameters"
 
-instance [LeanSerial.Serializable α] [HandlerBuilder β] : HandlerBuilder (α → β) where
+instance [LeanSerde.Serializable α] [HandlerBuilder β] : HandlerBuilder (α → β) where
   build f params :=
     match params with
     | [] => throw $ IO.userError "Not enough parameters"
     | p::ps => do
-      let arg ← Except.toIO (LeanSerial.deserialize p)
+      let arg ← Except.toIO (LeanSerde.deserialize p)
       HandlerBuilder.build (f arg) ps
 
 class ToHandler (α : Type) where

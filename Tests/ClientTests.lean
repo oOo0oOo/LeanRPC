@@ -3,7 +3,7 @@ import LeanRPC.Server
 import LeanRPC.Attribute
 import Tests.TestFramework
 import Tests.AttributeTests
-import LeanSerial
+import LeanSerde
 
 namespace LeanRPC.Tests.Client
 
@@ -33,8 +33,8 @@ def testClientRoundtrip (_ : Unit) : IO TestResult := do
         IO.println s!"[FAIL] testRPCAdd: RPC call failed. Error: {err}"
         pure false
 
-    let names := LeanSerial.serialize ["Alice", "Bob"]
-    let lastNames := LeanSerial.serialize [9, 99, 999]
+    let names := LeanSerde.serialize ["Alice", "Bob"]
+    let lastNames := LeanSerde.serialize [9, 99, 999]
     let params := [names, lastNames]
     let result2 : Except String Nat ← callRPC config "testRPCNumCombos" params (JsonRPCID.num 9999)
     let success2 ← match result2 with
