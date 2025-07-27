@@ -52,7 +52,7 @@ def testErrorResponse (_ : Unit) : IO TestResult := do
 def testExtractJsonBodyValid (_ : Unit) : IO TestResult := do
   let jsonBody := "{\"method\":\"test\",\"id\":1}"
   let httpRequest :=
-    "POST /rpc HTTP/1.1\r\n" ++
+    "POST / HTTP/1.1\r\n" ++
     "Content-Type: application/json\r\n" ++
     "Content-Length: " ++ toString jsonBody.length ++ "\r\n" ++
     "\r\n" ++
@@ -76,39 +76,39 @@ def testRejectNonPost (_ : Unit) : IO TestResult := do
     "{\"id\":1}"
 
   match extractJsonBody httpRequest with
-  | .error err =>
-    if stringContains err "POST" then
+  | .error (code, msg) =>
+    if code == 405 && stringContains msg "POST" then
       return assert true "Non-POST requests correctly rejected"
     else
-      return assert false s!"Wrong error message: {err}"
+      return assert false s!"Wrong error message or code: expected 405, got {code} '{msg}'"
   | .ok _ =>
     return assert false "Non-POST request was incorrectly accepted"
 
 -- Test missing content-length handling
 def testMissingContentLength (_ : Unit) : IO TestResult := do
   let httpRequest :=
-    "POST /rpc HTTP/1.1\r\n" ++
+    "POST / HTTP/1.1\r\n" ++
     "Content-Type: application/json\r\n" ++
     "\r\n" ++
     "{\"id\":1}"
 
   match extractJsonBody httpRequest with
-  | .error err =>
-    if stringContains err "Content-Length" then
+  | .error (code, msg) =>
+    if code == 411 && stringContains msg "Content-Length" then
       return assert true "Missing Content-Length correctly handled"
     else
-      return assert false s!"Wrong error message: {err}"
+      return assert false s!"Wrong error message or code: expected 411, got {code} '{msg}'"
   | .ok _ =>
     return assert false "Request without Content-Length was incorrectly accepted"
 
 -- Test empty request handling
 def testEmptyRequest (_ : Unit) : IO TestResult := do
   match extractJsonBody "" with
-  | .error err =>
-    if stringContains err "Invalid HTTP request" then
+  | .error (code, msg) =>
+    if code == 400 && stringContains msg "Missing body" then
       return assert true "Empty request correctly handled"
     else
-      return assert false s!"Wrong error message: {err}"
+      return assert false s!"Wrong error message or code: expected 400, got {code} '{msg}'"
   | .ok _ =>
     return assert false "Empty request was incorrectly accepted"
 
@@ -127,19 +127,48 @@ def testBodyLengthMismatch (_ : Unit) : IO TestResult := do
   let jsonBody := "{\"method\":\"test\"}"
   let wrongLength := jsonBody.length + 5
   let httpRequest :=
-    "POST /rpc HTTP/1.1\r\n" ++
+    "POST / HTTP/1.1\r\n" ++
+    "Content-Type: application/json\r\n" ++
     "Content-Length: " ++ toString wrongLength ++ "\r\n" ++
     "\r\n" ++
     jsonBody
 
   match extractJsonBody httpRequest with
-  | .error err =>
-    if stringContains err "Incomplete body" then
+  | .error (code, msg) =>
+    if code == 400 && stringContains msg "Incomplete body" then
       return assert true "Body length mismatch correctly detected"
     else
-      return assert false s!"Wrong error message: {err}"
+      return assert false s!"Wrong error message or code: expected 400, got {code} '{msg}'"
   | .ok _ =>
     return assert false "Body length mismatch was not detected"
+
+-- Test for 404 Not Found on wrong path
+def testNotFound (_ : Unit) : IO TestResult := do
+  let httpRequest :=
+    "POST /wrongpath HTTP/1.1\r\n" ++
+    "Content-Type: application/json\r\n" ++
+    "Content-Length: 2\r\n\r\n{}"
+  match extractJsonBody httpRequest with
+  | .error (code, msg) =>
+    if code == 404 && stringContains msg "Not found" then
+      return assert true "Wrong path correctly returns 404"
+    else
+      return assert false s!"Wrong error for wrong path: expected 404, got {code} '{msg}'"
+  | .ok _ => return assert false "Request with wrong path was incorrectly accepted"
+
+-- Test for 415 Unsupported Media Type
+def testUnsupportedMediaType (_ : Unit) : IO TestResult := do
+  let httpRequest :=
+    "POST / HTTP/1.1\r\n" ++
+    "Content-Type: text/plain\r\n" ++
+    "Content-Length: 4\r\n\r\ntest"
+  match extractJsonBody httpRequest with
+  | .error (code, msg) =>
+    if code == 415 && stringContains msg "Content-Type" then
+      return assert true "Wrong Content-Type correctly returns 415"
+    else
+      return assert false s!"Wrong error for wrong content-type: expected 415, got {code} '{msg}'"
+  | .ok _ => return assert false "Request with wrong content-type was incorrectly accepted"
 
 -- Test with a simple JSON handler
 def testWithJsonHandler (_ : Unit) : IO TestResult := do
@@ -148,7 +177,7 @@ def testWithJsonHandler (_ : Unit) : IO TestResult := do
 
   let jsonBody := "{\"method\":\"test\",\"id\":1}"
   let httpRequest :=
-    "POST /rpc HTTP/1.1\r\n" ++
+    "POST / HTTP/1.1\r\n" ++
     "Content-Type: application/json\r\n" ++
     "Content-Length: " ++ toString jsonBody.length ++ "\r\n" ++
     "\r\n" ++
@@ -239,7 +268,7 @@ def testFullServerIntegration (_ : Unit) : IO TestResult := do
             pure (Lean.toJson response).compress
 
   -- Use a different port for testing to avoid conflicts
-  let testConfig : ServerConfig := { port := 8089, host := "127.0.0.1", maxBodySize := 1024 }
+  let testConfig : ServerConfig := { port := 8089, host := "127.0.0.1", maxBodySize := 1024, logging := false }
 
   -- Start the server in a separate task
   let severStopFlag ← IO.mkRef false
@@ -342,6 +371,8 @@ def runHTTPTests : IO Unit := do
     ("Empty Request", testEmptyRequest),
     ("Server Config Defaults", testServerConfigDefaults),
     ("Body Length Mismatch", testBodyLengthMismatch),
+    ("Not Found", testNotFound),
+    ("Unsupported Media Type", testUnsupportedMediaType),
     ("JSON Handler Integration", testWithJsonHandler),
     ("Handler Error Handling", testHandlerError),
     ("Full Server Integration", testFullServerIntegration)

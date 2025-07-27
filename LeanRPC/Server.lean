@@ -50,14 +50,15 @@ def launchRPCServer (config : ServerConfig) (builder : MethodRegistry → Method
 
   let jsonHandler := createJsonRPCHandler fullRegistry
   let stopFlag ← IO.mkRef false
-  let _serverTask ← IO.asTask (startJsonRPCServer { port := config.port, host := config.host, maxBodySize := config.maxBodySize } jsonHandler stopFlag)
+  let _serverTask ← IO.asTask (startJsonRPCServer config jsonHandler stopFlag)
 
   pure (stopFlag.set true)
 
 def startRPCServer (config : ServerConfig) (builder : MethodRegistry → MethodRegistry) : IO Unit := do
   let _stopServer ← launchRPCServer config builder
 
-  IO.println "Press Ctrl+C to stop the server."
+  if config.logging then
+    IO.println "Press Ctrl+C to stop the server."
 
   -- Simple blocking mechanism - wait indefinitely
   let waitTask ← IO.asTask (IO.sleep 2147483647)

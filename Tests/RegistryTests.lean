@@ -13,7 +13,7 @@ open LeanRPC.Tests
 def runIOTest (name : String) (test : Unit → IO TestResult) : IO Unit := do
   let result ← test ()
   let status := if result.passed then "✓" else "✗"
-  IO.println s!"  {status} {name}: {result.message}"
+  IO.println s!"{status} {name}: {result.message}"
 
 -- Test basic method registration and execution
 def testMethodRegistration (_ : Unit) : IO TestResult := do

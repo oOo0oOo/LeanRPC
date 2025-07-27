@@ -150,7 +150,8 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
   let config : ServerConfig := {
     port := 8093,
     host := "127.0.0.1",
-    maxBodySize := 1024 * 1024
+    maxBodySize := 1024 * 1024,
+    logging := false
   }
 
   -- Start the RPC server in a separate task

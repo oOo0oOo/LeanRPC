@@ -16,7 +16,8 @@ def testClientRoundtrip (_ : Unit) : IO TestResult := do
   let config : ServerConfig := {
     port := 8094,
     host := "127.0.0.1",
-    maxBodySize := 1024 * 1024
+    maxBodySize := 1024 * 1024,
+    logging := false
   }
   let stopServer ← LeanRPC.Server.launchRPCServer config buildRPC
   IO.sleep 500
