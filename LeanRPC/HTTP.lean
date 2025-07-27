@@ -79,7 +79,6 @@ def handleConnection (jsonHandler : String → IO String) (client : Socket.Clien
       let response := errorResponse "Request too large" 413
       discard <| (← client.send response.toUTF8).block
       return
-
     let responseStr ← match extractJsonBody requestData with
       | .error err => pure (errorResponse err)
       | .ok jsonBody => do
@@ -105,7 +104,6 @@ def startJsonRPCServer (config : ServerConfig) (jsonHandler : String → IO Stri
   | .ok addr => do
     server.bind addr
     server.listen 128
-    IO.println s!"JSON-RPC server listening on {config.host}:{config.port}"
 
     -- Shutdown monitor
     discard <| IO.asTask (do

@@ -327,7 +327,7 @@ def testFullServerIntegration (_ : Unit) : IO TestResult := do
     return assert false s!"HTTP client error: {e}"
   finally
     severStopFlag.set true
-    IO.sleep 1200
+    IO.sleep 500
     try
       let _ := serverTask
     catch _ => pure ()

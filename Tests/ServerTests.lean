@@ -186,9 +186,9 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
     | .error _ => pure false
 
     -- Test 2: Use testRPCNumCombos function from AttributeTests
-    let names := LeanSerial.serialize (["Alice", "Bob"] : List String)
-    let lastNames := LeanSerial.serialize (["Smith", "Johnson", "Williams"] : List String)
-    let combosParams := Lean.Json.arr #[names, lastNames]
+    let names := LeanSerial.serialize ["Alice", "Bob"]
+    let cats := LeanSerial.serialize [6, 66, 666]
+    let combosParams := Lean.Json.arr #[names, cats]
     let combosRequest := "{\"jsonrpc\":\"2.0\",\"method\":\"testRPCNumCombos\",\"params\":" ++ combosParams.compress ++ ",\"id\":2}"
 
     let combosSuccess ← match ← makeJsonHttpRequest config combosRequest with

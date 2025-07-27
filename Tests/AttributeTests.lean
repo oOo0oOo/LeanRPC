@@ -28,7 +28,7 @@ def testGetFunctionName (_ : Unit) : IO TestResult := do
 def testRPCAdd (a b : Nat) : IO Nat := pure (a + b)
 
 @[rpc]
-def testRPCNumCombos (names : List String) (lastNames : List String) : IO Nat := pure (names.length * lastNames.length)
+def testRPCNumCombos (names : List String) (cats : List Nat) : IO Nat := pure (names.length * cats.length)
 
 -- This command will be elaborated at compile time, after the attributes have been processed.
 init_RPC
@@ -74,9 +74,9 @@ def testRPCCombos (_ : Unit) : IO TestResult := do
   let registry := buildRPC emptyRegistry
 
   let serializedNames : Lean.Json := LeanSerial.serialize ["Alice", "Bob", "Charlie"]
-  let serializedLastNames : Lean.Json := LeanSerial.serialize ["Smith", "Johnson", "Williams"]
+  let serializedCats : Lean.Json := LeanSerial.serialize [3, 4, 5]
 
-  let params := Lean.Json.arr #[serializedNames, serializedLastNames]
+  let params := Lean.Json.arr #[serializedNames, serializedCats]
 
   let lengthHandler := registry.get? "testRPCNumCombos"
   match lengthHandler with
