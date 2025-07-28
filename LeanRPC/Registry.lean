@@ -66,7 +66,7 @@ def registerFunction {α : Type} [ToHandler α] (registry : MethodRegistry) (met
   registry.insert method (createHandler f)
 
 -- Built-in methods
-def rpc_listMethods (registry : MethodRegistry) : List String :=
+def list_methods (registry : MethodRegistry) : List String :=
   registry.toList.map (·.1)
 
 end LeanRPC.Registry

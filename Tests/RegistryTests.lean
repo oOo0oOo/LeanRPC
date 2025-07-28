@@ -82,15 +82,15 @@ def testMultiArgFunction (_ : Unit) : IO TestResult := do
 -- Test function with complex serialized argument and execution
 def testComplexSerializedArg (_ : Unit) : IO TestResult := do
   let registry : MethodRegistry := Std.HashMap.emptyWithCapacity 16
-  let nameListFunc : List Lean.Name → IO Nat :=
-    fun names => pure names.length
-  let updatedRegistry := registerFunction registry "countNames" nameListFunc
+  let prodListFunc : List (Option String × Option Nat) → IO Nat :=
+    fun prods => pure prods.length
+  let updatedRegistry := registerFunction registry "countProds" prodListFunc
 
-  match updatedRegistry.get? "countNames" with
+  match updatedRegistry.get? "countProds" with
   | some h => do
-    let names := [Lean.Name.mkSimple "foo", Lean.Name.mkSimple "bar", Lean.Name.mkSimple "baz"]
-    let serializedNames: Lean.Json := LeanSerde.serialize names
-    let params := Lean.Json.arr #[ serializedNames ]
+    let prods := [(some "foo", some 1), (some "bar", none), (none, some 3)]
+    let serializedProds: Lean.Json := LeanSerde.serialize prods
+    let params := Lean.Json.arr #[ serializedProds ]
     let response ← h (some params) (JsonRPCID.str "test")
     match response.result? with
     | some result => do
@@ -101,6 +101,7 @@ def testComplexSerializedArg (_ : Unit) : IO TestResult := do
     | none => return assert false "Complex argument function returned no result"
   | none =>
     return assert false "Function with complex serialized argument not found in registry"
+
 
 -- Test handler execution with simple IO function
 def testHandlerExecution (_ : Unit) : IO TestResult := do
@@ -127,7 +128,7 @@ def testListMethods (_ : Unit) : IO TestResult := do
   let registry1 := registerMethod registry "method1" handler
   let registry2 := registerMethod registry1 "method2" handler
 
-  let methods := rpc_listMethods registry2
+  let methods := list_methods registry2
   if methods.contains "method1" && methods.contains "method2" && methods.length == 2 then
     return assert true "List methods works correctly"
   else

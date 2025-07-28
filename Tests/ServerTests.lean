@@ -211,8 +211,8 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
       | .error _ => pure false
     | .error _ => pure false
 
-    -- Test 3: Built-in rpc_listMethods
-    let listRequest := "{\"jsonrpc\":\"2.0\",\"method\":\"rpc_listMethods\",\"id\":3}"
+    -- Test 3: Built-in list_methods
+    let listRequest := "{\"jsonrpc\":\"2.0\",\"method\":\"list_methods\",\"id\":3}"
 
     let listSuccess ← match ← makeJsonHttpRequest config listRequest with
     | .ok response =>
@@ -226,7 +226,7 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
             | some result =>
               match LeanSerde.deserialize result with
               | .ok (methods : List String) =>
-                pure (methods.contains "testRPCAdd" && methods.contains "testRPCNumCombos" && methods.contains "rpc_listMethods")
+                pure (methods.contains "testRPCAdd" && methods.contains "testRPCNumCombos" && methods.contains "list_methods")
               | _ => pure false
             | none => pure false
           | .error _ => pure false

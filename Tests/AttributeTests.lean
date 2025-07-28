@@ -37,7 +37,7 @@ init_RPC
 def testRegistryInitialization (_ : Unit) : IO TestResult := do
   let emptyRegistry := mkMethodRegistry
   let registry := buildRPC emptyRegistry
-  let methods := rpc_listMethods registry
+  let methods := list_methods registry
 
   let hasAdd := methods.contains "testRPCAdd"
   let hasCombos := methods.contains "testRPCNumCombos"

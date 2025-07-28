@@ -43,9 +43,9 @@ def launchRPCServer (config : ServerConfig) (builder : MethodRegistry → Method
   let listMethods : IO (List String) := do
     match ← fullRegistryRef.get with
     | none => pure []
-    | some r => pure (rpc_listMethods r)
+    | some r => pure (list_methods r)
 
-  let fullRegistry := registerFunction registry "rpc_listMethods" listMethods
+  let fullRegistry := registerFunction registry "list_methods" listMethods
   fullRegistryRef.set (some fullRegistry)
 
   let jsonHandler := createJsonRPCHandler fullRegistry
