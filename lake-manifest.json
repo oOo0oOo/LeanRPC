@@ -5,7 +5,7 @@
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "896c13ef32767c16576032363a9c45a538bcea54",
+   "rev": "3713637365300cd3dbf442988fe8d36a3df6402e",
    "name": "LeanSerde",
    "manifestFile": "lake-manifest.json",
    "inputRev": "main",
