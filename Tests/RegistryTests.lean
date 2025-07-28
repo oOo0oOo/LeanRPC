@@ -128,7 +128,7 @@ def testListMethods (_ : Unit) : IO TestResult := do
   let registry1 := registerMethod registry "method1" handler
   let registry2 := registerMethod registry1 "method2" handler
 
-  let methods := list_methods registry2
+  let methods := listMethods registry2
   if methods.contains "method1" && methods.contains "method2" && methods.length == 2 then
     return assert true "List methods works correctly"
   else

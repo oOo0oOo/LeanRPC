@@ -11,56 +11,39 @@ open LeanRPC.Protocol
 open LeanRPC.Registry
 
 def createJsonRPCHandler (registry : MethodRegistry) : String → IO String := fun jsonRequest => do
+  let mkErrorResponse (code : Int) (message : String) (id : JsonRPCID) (data? : Option Lean.Json := none) : String :=
+    (Lean.toJson (JsonRPCResponse.error code message id data?)).compress
+
   match Lean.Json.parse jsonRequest with
-  | .error err =>
-    let response := JsonRPCResponse.error JsonRPCErrorCode.parseError s!"Parse error: {err}" JsonRPCID.null
-    pure (Lean.toJson response).compress
+  | .error err => pure (mkErrorResponse JsonRPCErrorCode.parseError s!"Parse error: {err}" JsonRPCID.null)
   | .ok requestJson =>
     match Lean.fromJson? requestJson with
-    | .error err =>
-      let response := JsonRPCResponse.error JsonRPCErrorCode.invalidRequest s!"Invalid request: {err}" JsonRPCID.null
-      pure (Lean.toJson response).compress
+    | .error err => pure (mkErrorResponse JsonRPCErrorCode.invalidRequest s!"Invalid request: {err}" JsonRPCID.null)
     | .ok (req : JsonRPCRequest) =>
       let id := req.id?.getD JsonRPCID.null
       match JsonRPCRequest.validate req with
-      | .error errObj =>
-        let response := JsonRPCResponse.error errObj.code errObj.message id errObj.data?
-        pure (Lean.toJson response).compress
+      | .error errObj => pure (mkErrorResponse errObj.code errObj.message id errObj.data?)
       | .ok _ =>
         match registry.get? req.method with
-        | none =>
-          let response := JsonRPCResponse.error JsonRPCErrorCode.methodNotFound s!"Method '{req.method}' not found" id
-          pure (Lean.toJson response).compress
+        | none => pure (mkErrorResponse JsonRPCErrorCode.methodNotFound s!"Method '{req.method}' not found" id)
         | some handler => do
           let response ← handler req.params? id
           pure (Lean.toJson response).compress
 
-def launchRPCServer (config : ServerConfig) (builder : MethodRegistry → MethodRegistry) : IO (IO Unit) := do
-  let baseRegistry := mkMethodRegistry
-  let registry := builder baseRegistry
-  let fullRegistryRef ← IO.mkRef (Option.none : Option MethodRegistry)
+def launchRPCServer (config : ServerConfig) (registryBuilder : MethodRegistry → MethodRegistry) : IO (IO Unit) := do
+  let registry := withBuiltinMethods (registryBuilder mkMethodRegistry)
+  let jsonHandler := createJsonRPCHandler registry
 
-  let listMethods : IO (List String) := do
-    match ← fullRegistryRef.get with
-    | none => pure []
-    | some r => pure (list_methods r)
-
-  let fullRegistry := registerFunction registry "list_methods" listMethods
-  fullRegistryRef.set (some fullRegistry)
-
-  let jsonHandler := createJsonRPCHandler fullRegistry
   let stopFlag ← IO.mkRef false
   let _serverTask ← IO.asTask (startJsonRPCServer config jsonHandler stopFlag)
-
   pure (stopFlag.set true)
 
-def startRPCServer (config : ServerConfig) (builder : MethodRegistry → MethodRegistry) : IO Unit := do
-  let _stopServer ← launchRPCServer config builder
+def startRPCServer (config : ServerConfig) (registryBuilder : MethodRegistry → MethodRegistry) : IO Unit := do
+  let _stopServer ← launchRPCServer config registryBuilder
 
   if config.logging then
     IO.println "Press Ctrl+C to stop the server."
 
-  -- Simple blocking mechanism - wait indefinitely
   let waitTask ← IO.asTask (IO.sleep 2147483647)
   let _ ← IO.wait waitTask
 

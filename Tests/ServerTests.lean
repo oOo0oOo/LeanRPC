@@ -224,10 +224,11 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
           | .ok (resp : LeanRPC.Protocol.JsonRPCResponse) =>
             match resp.result? with
             | some result =>
-              match LeanSerde.deserialize result with
-              | .ok (methods : List String) =>
-                pure (methods.contains "testRPCAdd" && methods.contains "testRPCNumCombos" && methods.contains "list_methods")
-              | _ => pure false
+              match Lean.fromJson? (α := List String) result with
+              | .ok methods =>
+                let expected := ["testRPCAdd", "testRPCNumCombos"]
+                if methods == expected then pure true else pure false
+              | .error err => IO.println s!"Failed to deserialize list_methods result: {err}" *> pure false
             | none => pure false
           | .error _ => pure false
         | .error _ => pure false

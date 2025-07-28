@@ -66,7 +66,14 @@ def registerFunction {α : Type} [ToHandler α] (registry : MethodRegistry) (met
   registry.insert method (createHandler f)
 
 -- Built-in methods
-def list_methods (registry : MethodRegistry) : List String :=
+def listMethods (registry : MethodRegistry) : List String :=
   registry.toList.map (·.1)
+
+def withBuiltinMethods (registry : MethodRegistry) : MethodRegistry :=
+  let listMethodsHandler : MethodHandler := fun _ id => do
+    let methods := listMethods registry
+    let methodsJson := Lean.Json.arr (methods.map Lean.Json.str).toArray
+    pure (JsonRPCResponse.success methodsJson id)
+  registry.insert "list_methods" listMethodsHandler
 
 end LeanRPC.Registry
