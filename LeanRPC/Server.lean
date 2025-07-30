@@ -21,14 +21,15 @@ def createJsonRPCHandler (registry : MethodRegistry) : String → IO String := f
     | .error err => pure (mkErrorResponse JsonRPCErrorCode.invalidRequest s!"Invalid request: {err}" JsonRPCID.null)
     | .ok (req : JsonRPCRequest) =>
       let id := req.id?.getD JsonRPCID.null
-      match JsonRPCRequest.validate req with
+      match req.validate with
       | .error errObj => pure (mkErrorResponse errObj.code errObj.message id errObj.data?)
       | .ok _ =>
         match registry.get? req.method with
         | none => pure (mkErrorResponse JsonRPCErrorCode.methodNotFound s!"Method '{req.method}' not found" id)
         | some handler => do
-          let response ← handler req.params? id
-          pure (Lean.toJson response).compress
+          match ← handler req.params? id with
+          | .ok response => pure (Lean.toJson response).compress
+          | .error msg => pure (mkErrorResponse JsonRPCErrorCode.internalError msg id)
 
 def launchRPCServer (config : ServerConfig) (registryBuilder : MethodRegistry → MethodRegistry) : IO (IO Unit) := do
   let registry := withBuiltinMethods (registryBuilder mkMethodRegistry)

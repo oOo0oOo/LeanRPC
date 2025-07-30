@@ -19,7 +19,7 @@ open LeanRPC.HTTP
 -- Test createJsonRPCHandler with valid requests
 def testCreateJsonRPCHandlerValid (_ : Unit) : IO TestResult := do
   let registry := mkMethodRegistry
-  let addFunc : Nat → Nat → IO Nat := fun a b => pure (a + b)
+  let addFunc : Nat → Nat → Nat := fun a b => a + b
   let registryWithAdd := registerFunction registry "add" addFunc
 
   let handler := createJsonRPCHandler registryWithAdd
@@ -226,7 +226,7 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
             | some result =>
               match Lean.fromJson? (α := List String) result with
               | .ok methods =>
-                let expected := ["testRPCAdd", "testRPCNumCombos"]
+                let expected := ["testRPCAddCore", "testRPCAddTask", "testRPCAddTermElab", "testRPCAddIO", "testRPCAdd", "testRPCAddCommandElab", "testRPCAddOption", "testRPCNumCombos", "testRPCAddMeta", "testRPCAddStateT", "testRPCAddExcept", "testRPCAddReaderT"]
                 if methods == expected then pure true else pure false
               | .error err => IO.println s!"Failed to deserialize list_methods result: {err}" *> pure false
             | none => pure false

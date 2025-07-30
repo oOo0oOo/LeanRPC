@@ -18,16 +18,19 @@ def runIOTest (name : String) (test : Unit → IO TestResult) : IO Unit := do
 -- Test basic method registration and execution
 def testMethodRegistration (_ : Unit) : IO TestResult := do
   let registry : MethodRegistry := Std.HashMap.emptyWithCapacity 16
-  let handler : MethodHandler := fun _ id => pure (JsonRPCResponse.success (.str "test") id)
+  let handler : MethodHandler := fun _ id => pure (.ok (JsonRPCResponse.success (.str "test") id))
   let updatedRegistry := registerMethod registry "testMethod" handler
 
   if updatedRegistry.contains "testMethod" then
     match updatedRegistry.get? "testMethod" with
     | some h => do
       let response ← h none (JsonRPCID.str "test")
-      match response.result? with
-      | some (.str "test") => return assert true "Method registration and execution works"
-      | _ => return assert false "Method execution returned wrong result"
+      match response with
+      | .ok resp =>
+        match resp.result? with
+        | some (.str "test") => return assert true "Method registration and execution works"
+        | _ => return assert false "Method execution returned wrong result"
+      | .error err => return assert false s!"Method execution failed: {err}"
     | none => return assert false "Method not found after registration"
   else
     return assert false "Method registration failed"
@@ -35,20 +38,24 @@ def testMethodRegistration (_ : Unit) : IO TestResult := do
 -- Test function registration with simple function and execution
 def testFunctionRegistration (_ : Unit) : IO TestResult := do
   let registry : MethodRegistry := Std.HashMap.emptyWithCapacity 16
-  let addFunc : IO Nat := pure 42
-  let updatedRegistry := registerFunction registry "getNumber" addFunc
+  let addFunc : Nat := 42
+  let handler := createHandler addFunc
+  let updatedRegistry := registerMethod registry "getNumber" handler
 
   if updatedRegistry.contains "getNumber" then
     match updatedRegistry.get? "getNumber" with
     | some h => do
       let response ← h none (JsonRPCID.str "test")
-      match response.result? with
-      | some result => do
-        match LeanSerde.deserialize result with
-        | .ok (42 : Nat) => return assert true "Function registration and execution works"
-        | .ok val => return assert false s!"Function execution returned wrong value: {val}"
-        | .error err => return assert false s!"Function execution deserialization failed: {err}"
-      | none => return assert false "Function execution returned no result"
+      match response with
+      | .ok resp =>
+        match resp.result? with
+        | some result => do
+          match LeanSerde.deserialize result with
+          | .ok (42 : Nat) => return assert true "Function registration and execution works"
+          | .ok val => return assert false s!"Function execution returned wrong value: {val}"
+          | .error err => return assert false s!"Function execution deserialization failed: {err}"
+        | none => return assert false "Function execution returned no result"
+      | .error err => return assert false s!"Function execution failed: {err}"
     | none => return assert false "Function not found after registration"
   else
     return assert false "Function registration failed"
@@ -56,8 +63,8 @@ def testFunctionRegistration (_ : Unit) : IO TestResult := do
 -- Test complex multi-argument function registration and execution
 def testMultiArgFunction (_ : Unit) : IO TestResult := do
   let registry : MethodRegistry := Std.HashMap.emptyWithCapacity 16
-  let complexFunc : Nat → Nat → Nat → Nat → Nat → IO Nat :=
-    fun a b c d e => pure (a + b + c + d + e)
+  let complexFunc : Nat → Nat → Nat → Nat → Nat → Nat :=
+    fun a b c d e => a + b + c + d + e
   let updatedRegistry := registerFunction registry "addFive" complexFunc
 
   match updatedRegistry.get? "addFive" with
@@ -69,21 +76,24 @@ def testMultiArgFunction (_ : Unit) : IO TestResult := do
     let p5: Lean.Json := LeanSerde.serialize (5 : Nat)
     let params := Lean.Json.arr #[ p1, p2, p3, p4, p5 ]
     let response ← h (some params) (JsonRPCID.str "test")
-    match response.result? with
-    | some result => do
-      match LeanSerde.deserialize result with
-      | .ok (15 : Nat) => return assert true "Multi-argument function execution works"
-      | .ok val => return assert false s!"Multi-argument function returned wrong value: {val}"
-      | .error err => return assert false s!"Multi-argument function deserialization failed: {err}"
-    | none => return assert false "Multi-argument function returned no result"
+    match response with
+    | .ok resp =>
+      match resp.result? with
+      | some result => do
+        match LeanSerde.deserialize result with
+        | .ok (15 : Nat) => return assert true "Multi-argument function execution works"
+        | .ok val => return assert false s!"Multi-argument function returned wrong value: {val}"
+        | .error err => return assert false s!"Multi-argument function deserialization failed: {err}"
+      | none => return assert false "Multi-argument function returned no result"
+    | .error err => return assert false s!"Multi-argument function execution failed: {err}"
   | none =>
     return assert false "Multi-argument function not found in registry"
 
 -- Test function with complex serialized argument and execution
 def testComplexSerializedArg (_ : Unit) : IO TestResult := do
   let registry : MethodRegistry := Std.HashMap.emptyWithCapacity 16
-  let prodListFunc : List (Option String × Option Nat) → IO Nat :=
-    fun prods => pure prods.length
+  let prodListFunc : List (Option String × Option Nat) → Nat :=
+    fun prods => prods.length
   let updatedRegistry := registerFunction registry "countProds" prodListFunc
 
   match updatedRegistry.get? "countProds" with
@@ -92,39 +102,44 @@ def testComplexSerializedArg (_ : Unit) : IO TestResult := do
     let serializedProds: Lean.Json := LeanSerde.serialize prods
     let params := Lean.Json.arr #[ serializedProds ]
     let response ← h (some params) (JsonRPCID.str "test")
-    match response.result? with
-    | some result => do
-      match LeanSerde.deserialize result with
-      | .ok (3 : Nat) => return assert true "Complex serialized argument execution works"
-      | .ok val => return assert false s!"Complex argument function returned wrong value: {val}"
-      | .error err => return assert false s!"Complex argument function deserialization failed: {err}"
-    | none => return assert false "Complex argument function returned no result"
+    match response with
+    | .ok resp =>
+      match resp.result? with
+      | some result => do
+        match LeanSerde.deserialize result with
+        | .ok (3 : Nat) => return assert true "Complex serialized argument execution works"
+        | .ok val => return assert false s!"Complex argument function returned wrong value: {val}"
+        | .error err => return assert false s!"Complex argument function deserialization failed: {err}"
+      | none => return assert false "Complex argument function returned no result"
+    | .error err => return assert false s!"Complex argument function execution failed: {err}"
   | none =>
     return assert false "Function with complex serialized argument not found in registry"
-
 
 -- Test handler execution with simple IO function
 def testHandlerExecution (_ : Unit) : IO TestResult := do
   let registry : MethodRegistry := Std.HashMap.emptyWithCapacity 16
-  let simpleFunc : IO Nat := pure 42
+  let simpleFunc : Nat := 42
   let updatedRegistry := registerFunction registry "getNumber" simpleFunc
 
   match updatedRegistry.get? "getNumber" with
   | some h => do
     let response ← h none (JsonRPCID.str "test")
-    match response.result? with
-    | some result => do
-      match LeanSerde.deserialize result with
-      | .ok (42 : Nat) => return assert true "Handler execution works"
-      | .ok val => return assert false s!"Handler execution returned wrong value: {val}"
-      | .error err => return assert false s!"Handler execution deserialization failed: {err}"
-    | none => return assert false "Handler execution returned no result"
+    match response with
+    | .ok resp =>
+      match resp.result? with
+      | some result => do
+        match LeanSerde.deserialize result with
+        | .ok (42 : Nat) => return assert true "Handler execution works"
+        | .ok val => return assert false s!"Handler execution returned wrong value: {val}"
+        | .error err => return assert false s!"Handler execution deserialization failed: {err}"
+      | none => return assert false "Handler execution returned no result"
+    | .error err => return assert false s!"Handler execution failed: {err}"
   | none => return assert false "Handler not found in registry"
 
 -- Test list methods functionality (pure test)
 def testListMethods (_ : Unit) : IO TestResult := do
   let registry : MethodRegistry := Std.HashMap.emptyWithCapacity 16
-  let handler : MethodHandler := fun _ id => pure (JsonRPCResponse.success (.str "test") id)
+  let handler : MethodHandler := fun _ id => pure (.ok (JsonRPCResponse.success (.str "test") id))
   let registry1 := registerMethod registry "method1" handler
   let registry2 := registerMethod registry1 "method2" handler
 

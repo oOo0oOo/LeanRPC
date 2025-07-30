@@ -227,9 +227,9 @@ def testHandlerError (_ : Unit) : IO TestResult := do
 def testFullServerIntegration (_ : Unit) : IO TestResult := do
   -- Set up a test registry with some handlers
   let registry : MethodRegistry := mkMethodRegistry
-  let addFunc : Nat → Nat → IO Nat := fun a b => pure (a + b)
-  let getTimeFunc : IO String := pure "2024-07-26T12:00:00Z"
-  let echoFunc : String → IO String := fun msg => pure s!"Echo: {msg}"
+  let addFunc : Nat → Nat → Nat := fun a b => (a + b)
+  let getTimeFunc : String := "2024-07-26T12:00:00Z"
+  let echoFunc : String → String := fun msg => s!"Echo: {msg}"
 
   let registryWithHandlers := registerFunction (registerFunction (registerFunction registry "add" addFunc) "getTime" getTimeFunc) "echo" echoFunc
 
@@ -263,9 +263,12 @@ def testFullServerIntegration (_ : Unit) : IO TestResult := do
               "Method not found"
               (req.id?.getD JsonRPCID.null))).compress
           | some handler => do
-            -- Execute the handler
-            let response ← handler req.params? (req.id?.getD JsonRPCID.null)
-            pure (Lean.toJson response).compress
+            match ← handler req.params? (req.id?.getD JsonRPCID.null) with
+            | .ok response => pure (Lean.toJson response).compress
+            | .error msg => pure (Lean.toJson (JsonRPCResponse.error
+                JsonRPCErrorCode.internalError
+                msg
+                (req.id?.getD JsonRPCID.null))).compress
 
   -- Use a different port for testing to avoid conflicts
   let testConfig : ServerConfig := { port := 8089, host := "127.0.0.1", maxBodySize := 1024, logging := false }
