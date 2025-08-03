@@ -25,8 +25,8 @@ def testCreateJsonRPCHandlerValid (_ : Unit) : IO TestResult := do
   let handler := createJsonRPCHandler registryWithAdd
 
   -- Test valid JSON-RPC request
-  let param1 := LeanSerde.serialize (5 : Nat)
-  let param2 := LeanSerde.serialize (3 : Nat)
+  let param1 := ← LeanSerde.serialize (5 : Nat)
+  let param2 := ← LeanSerde.serialize (3 : Nat)
   let params := Lean.Json.arr #[param1, param2]
   let request := "{\"jsonrpc\":\"2.0\",\"method\":\"add\",\"params\":" ++ params.compress ++ ",\"id\":1}"
 
@@ -40,7 +40,7 @@ def testCreateJsonRPCHandlerValid (_ : Unit) : IO TestResult := do
     | .ok (response : JsonRPCResponse) =>
       match response.result? with
       | some result =>
-        match LeanSerde.deserialize result with
+        match ← LeanSerde.deserialize result with
         | .ok (8 : Nat) => return assert true "Valid JSON-RPC request handled correctly"
         | .ok val => return assert false s!"Wrong result: {val}"
         | .error err => return assert false s!"Result deserialization failed: {err}"
@@ -162,8 +162,8 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
 
   try
     -- Test 1: Use testRPCAdd function from AttributeTests (available via init_RPC)
-    let param1 := LeanSerde.serialize (42 : Nat)
-    let param2 := LeanSerde.serialize (17 : Nat)
+    let param1 := ← LeanSerde.serialize (42 : Nat)
+    let param2 := ← LeanSerde.serialize (17 : Nat)
     let params := Lean.Json.arr #[param1, param2]
     let addRequest := "{\"jsonrpc\":\"2.0\",\"method\":\"testRPCAdd\",\"params\":" ++ params.compress ++ ",\"id\":1}"
 
@@ -177,7 +177,7 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
           | .ok (resp : LeanRPC.Protocol.JsonRPCResponse) =>
             match resp.result? with
             | some result =>
-              match LeanSerde.deserialize result with
+              match ← LeanSerde.deserialize result with
               | .ok (59 : Nat) => pure true  -- 42 + 17 = 59
               | _ => pure false
             | none => pure false
@@ -187,8 +187,8 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
     | .error _ => pure false
 
     -- Test 2: Use testRPCNumCombos function from AttributeTests
-    let names := LeanSerde.serialize ["Alice", "Bob"]
-    let cats := LeanSerde.serialize [6, 66, 666]
+    let names := ← LeanSerde.serialize ["Alice", "Bob"]
+    let cats := ← LeanSerde.serialize [6, 66, 666]
     let combosParams := Lean.Json.arr #[names, cats]
     let combosRequest := "{\"jsonrpc\":\"2.0\",\"method\":\"testRPCNumCombos\",\"params\":" ++ combosParams.compress ++ ",\"id\":2}"
 
@@ -202,7 +202,7 @@ def testRealUseCaseIntegration (_ : Unit) : IO TestResult := do
           | .ok (resp : LeanRPC.Protocol.JsonRPCResponse) =>
             match resp.result? with
             | some result =>
-              match LeanSerde.deserialize result with
+              match ← LeanSerde.deserialize result with
               | .ok (6 : Nat) => pure true  -- 2 * 3 = 6
               | _ => pure false
             | none => pure false

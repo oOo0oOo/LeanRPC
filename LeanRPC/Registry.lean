@@ -1,5 +1,6 @@
 import LeanRPC.Protocol
 import LeanSerde
+import LeanSerde.MetaTypes
 import Lean.Elab
 import Lean
 import Std.Data.HashMap
@@ -18,7 +19,7 @@ class HandlerBuilder (α : Type) where
 instance [LeanSerde.Serializable β] : HandlerBuilder β where
   build f params := do
     if params.isEmpty then
-      pure (.ok (LeanSerde.serialize f))
+      pure (.ok (← LeanSerde.serialize f))
     else
       pure (.error "Too many parameters")
 
@@ -27,7 +28,7 @@ instance [LeanSerde.Serializable β] : HandlerBuilder (IO β) where
     if params.isEmpty then
       try
         let result ← f
-        pure (.ok (LeanSerde.serialize result))
+        pure (.ok (← LeanSerde.serialize result))
       catch e =>
         pure (.error s!"IO function execution failed: {e}")
     else
@@ -37,8 +38,8 @@ instance [LeanSerde.Serializable ε] [LeanSerde.Serializable β] : HandlerBuilde
   build f params := do
     if params.isEmpty then
       match f with
-      | .ok result => pure (.ok (LeanSerde.serialize result))
-      | .error err => pure (.error s!"Function returned error: {(LeanSerde.serialize err : String)}")
+      | .ok result => pure (.ok (← LeanSerde.serialize result))
+      | .error err => pure (.error s!"Function returned error: {(← LeanSerde.serialize err : String)}")
     else
       pure (.error "Too many parameters")
 
@@ -46,7 +47,7 @@ instance [LeanSerde.Serializable β] : HandlerBuilder (Option β) where
   build f params := do
     if params.isEmpty then
       match f with
-      | .some result => pure (.ok (LeanSerde.serialize result))
+      | .some result => pure (.ok (← LeanSerde.serialize result))
       | .none => pure (.error "Function returned None")
     else
       pure (.error "Too many parameters")
@@ -56,7 +57,7 @@ instance [LeanSerde.Serializable β] : HandlerBuilder (Lean.Elab.Command.Command
   build f params := do
     if params.isEmpty then
       try
-        let env ← Lean.importModules #[] {} 0
+        let env ← LeanSerde.EnvironmentBuilder.fromImports ["Lean", "Init"]
         let commandCtx : Command.Context := {
           fileName := "<rpc>",
           fileMap := default,
@@ -66,7 +67,7 @@ instance [LeanSerde.Serializable β] : HandlerBuilder (Lean.Elab.Command.Command
         let commandState : Command.State := Command.mkState env
         let eio := (f.run commandCtx).run commandState
         match ← eio.toIO' with
-        | .ok (result, _) => pure (.ok (LeanSerde.serialize result))
+        | .ok (result, _) => pure (.ok (← LeanSerde.serialize result))
         | .error _ => pure (.error "CommandElabM execution failed")
       catch e =>
         pure (.error s!"CommandElabM function execution failed: {e}")
@@ -78,7 +79,7 @@ instance [LeanSerde.Serializable β] : HandlerBuilder (Lean.CoreM β) where
     if params.isEmpty then
       try
         let commandAction : Command.CommandElabM β := Command.liftCoreM f
-        let env ← Lean.importModules #[] {} 0
+        let env ← LeanSerde.EnvironmentBuilder.fromImports ["Lean", "Init"]
         let commandCtx : Command.Context := {
           fileName := "<rpc>",
           fileMap := default,
@@ -88,7 +89,7 @@ instance [LeanSerde.Serializable β] : HandlerBuilder (Lean.CoreM β) where
         let commandState : Command.State := Command.mkState env
         let eio := (commandAction.run commandCtx).run commandState
         match ← eio.toIO' with
-        | .ok (result, _) => pure (.ok (LeanSerde.serialize result))
+        | .ok (result, _) => pure (.ok (← LeanSerde.serialize result))
         | .error _ => pure (.error s!"CoreM execution failed")
       catch e =>
         pure (.error s!"CoreM function execution failed: {e}")
@@ -99,7 +100,7 @@ instance [LeanSerde.Serializable β] : HandlerBuilder (Lean.MetaM β) where
   build f params := do
     if params.isEmpty then
       try
-        let env ← Lean.importModules #[] {} 0
+        let env ← LeanSerde.EnvironmentBuilder.fromImports ["Lean", "Init"]
         let coreCtx : Lean.Core.Context := {
           fileName := "<rpc>",
           fileMap := default,
@@ -113,7 +114,7 @@ instance [LeanSerde.Serializable β] : HandlerBuilder (Lean.MetaM β) where
         let metaState : Lean.Meta.State := {}
         let eio := (f.run metaCtx metaState |>.run coreCtx coreState)
         match ← eio.toIO' with
-        | .ok ((result, _), _) => pure (.ok (LeanSerde.serialize result))
+        | .ok ((result, _), _) => pure (.ok (← LeanSerde.serialize result))
         | .error _ => pure (.error s!"MetaM execution failed")
         catch e =>
         pure (.error s!"MetaM function execution failed: {e}")
@@ -125,7 +126,7 @@ instance [LeanSerde.Serializable β] : HandlerBuilder (Lean.Elab.TermElabM β) w
     if params.isEmpty then
       try
         let commandAction : Command.CommandElabM β := Command.liftTermElabM f
-        let env ← Lean.importModules #[] {} 0
+        let env ← LeanSerde.EnvironmentBuilder.fromImports ["Lean", "Init"]
         let commandCtx : Command.Context := {
           fileName := "<rpc>",
           fileMap := default,
@@ -135,7 +136,7 @@ instance [LeanSerde.Serializable β] : HandlerBuilder (Lean.Elab.TermElabM β) w
         let commandState : Command.State := Command.mkState env
         let eio := (commandAction.run commandCtx).run commandState
         match ← eio.toIO' with
-        | .ok (result, _) => pure (.ok (LeanSerde.serialize result))
+        | .ok (result, _) => pure (.ok (← LeanSerde.serialize result))
         | .error _ => pure (.error s!"TermElabM execution failed")
       catch e =>
         pure (.error s!"TermElabM function execution failed: {e}")
@@ -151,12 +152,12 @@ instance [LeanSerde.Serializable σ] [LeanSerde.Serializable β] : HandlerBuilde
       if !restParams.isEmpty then
         pure (.error "StateT IO: too many parameters after state")
       else
-        match LeanSerde.deserialize stateParam with
+        match (← LeanSerde.deserialize stateParam) with
         | .ok initialState => do
           try
             let (result, finalState) ← f.run initialState
             let resultTuple := (result, finalState)
-            pure (.ok (LeanSerde.serialize resultTuple))
+            pure (.ok (← LeanSerde.serialize resultTuple))
           catch e =>
             pure (.error s!"StateT IO execution failed: {e}")
         | .error err => pure (.error s!"State parameter deserialization failed: {err}")
@@ -169,11 +170,11 @@ instance [LeanSerde.Serializable ρ] [LeanSerde.Serializable β] : HandlerBuilde
       if !restParams.isEmpty then
         pure (.error "ReaderT IO: too many parameters after environment")
       else
-        match LeanSerde.deserialize envParam with
+        match (← LeanSerde.deserialize envParam) with
         | .ok environment => do
           try
             let result ← f.run environment
-            pure (.ok (LeanSerde.serialize result))
+            pure (.ok (← LeanSerde.serialize result))
           catch e =>
             pure (.error s!"ReaderT IO execution failed: {e}")
         | .error err => pure (.error s!"Environment parameter deserialization failed: {err}")
@@ -184,7 +185,7 @@ instance [LeanSerde.Serializable β] : HandlerBuilder (Task β) where
     if params.isEmpty then
       try
         let result := f.get
-        pure (.ok (LeanSerde.serialize result))
+        pure (.ok (← LeanSerde.serialize result))
       catch e =>
         pure (.error s!"Task execution failed: {e}")
     else
@@ -196,7 +197,7 @@ instance [LeanSerde.Serializable α] [HandlerBuilder β] : HandlerBuilder (α �
     match params with
     | [] => pure (.error "Not enough parameters")
     | p::ps => do
-      match LeanSerde.deserialize p with
+      match (← LeanSerde.deserialize p) with
       | .ok arg => HandlerBuilder.build (f arg) ps
       | .error err => pure (.error s!"Parameter deserialization failed: {err}")
 

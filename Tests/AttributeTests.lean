@@ -102,8 +102,8 @@ def testRPCAddition (_ : Unit) : IO TestResult := do
   let emptyRegistry := mkMethodRegistry
   let registry := buildRPC emptyRegistry
 
-  let param1 := LeanSerde.serialize (33 : Nat)
-  let param2 := LeanSerde.serialize (11 : Nat)
+  let param1 := ← LeanSerde.serialize (33 : Nat)
+  let param2 := ← LeanSerde.serialize (11 : Nat)
   let params := Lean.Json.arr #[param1, param2]
 
   let addHandler := registry.get? "testRPCAdd"
@@ -113,7 +113,7 @@ def testRPCAddition (_ : Unit) : IO TestResult := do
       | .ok response =>
         match response.result? with
         | some result => do
-          match LeanSerde.deserialize result with
+          match ← LeanSerde.deserialize result with
           | .ok (44 : Nat) => return assert true "Addition handler works"
           | .ok val => return assert false s!"Addition handler returned wrong value: {val}"
           | .error err => return assert false s!"Addition handler deserialization failed: {err}"
@@ -125,8 +125,8 @@ def testRPCCombos (_ : Unit) : IO TestResult := do
   let emptyRegistry := mkMethodRegistry
   let registry := buildRPC emptyRegistry
 
-  let serializedNames : Lean.Json := LeanSerde.serialize ["Alice", "Bob", "Charlie"]
-  let serializedCats : Lean.Json := LeanSerde.serialize [3, 4, 5]
+  let serializedNames : Lean.Json := ← LeanSerde.serialize ["Alice", "Bob", "Charlie"]
+  let serializedCats : Lean.Json := ← LeanSerde.serialize [3, 4, 5]
 
   let params := Lean.Json.arr #[serializedNames, serializedCats]
 
@@ -137,7 +137,7 @@ def testRPCCombos (_ : Unit) : IO TestResult := do
       | .ok response =>
         match response.result? with
         | some result => do
-          match LeanSerde.deserialize result with
+          match ← LeanSerde.deserialize result with
           | .ok (9 : Nat) => return assert true "Length handler works"
           | .ok val => return assert false s!"Length handler returned wrong value: {val}"
           | .error err => return assert false s!"Length handler deserialization failed: {err}"
@@ -152,8 +152,8 @@ def testMonads (_ : Unit) : IO TestResult := do
   let monadMethods := #["testRPCAddIO", "testRPCAddExcept", "testRPCAddOption", "testRPCAddMeta", "testRPCAddCore", "testRPCAddTermElab", "testRPCAddCommandElab", "testRPCAddTask"]
 
   for method in monadMethods do
-    let param1 := LeanSerde.serialize 15
-    let param2 := LeanSerde.serialize 25
+    let param1 := ← LeanSerde.serialize 15
+    let param2 := ← LeanSerde.serialize 25
     let params := Lean.Json.arr #[param1, param2]
 
     match registry.get? method with
@@ -162,7 +162,7 @@ def testMonads (_ : Unit) : IO TestResult := do
         | .ok response =>
           match response.result? with
           | some result => do
-            match LeanSerde.deserialize result with
+            match ← LeanSerde.deserialize result with
             | .ok (40 : Nat) => continue
             | .ok val => return assert false s!"{method} returned wrong value: {val}"
             | .error err => return assert false s!"{method} deserialization failed: {err}"
@@ -180,9 +180,9 @@ def testStateReaderMonads (_ : Unit) : IO TestResult := do
   let emptyRegistry := mkMethodRegistry
   let registry := buildRPC emptyRegistry
 
-  let initialState := LeanSerde.serialize (10 : Nat)
-  let param1 := LeanSerde.serialize (15 : Nat)
-  let param2 := LeanSerde.serialize (25 : Nat)
+  let initialState := ← LeanSerde.serialize (10 : Nat)
+  let param1 := ← LeanSerde.serialize (15 : Nat)
+  let param2 := ← LeanSerde.serialize (25 : Nat)
   let stateParams := Lean.Json.arr #[initialState, param1, param2]
 
   match registry.get? "testRPCAddStateT" with
@@ -191,7 +191,7 @@ def testStateReaderMonads (_ : Unit) : IO TestResult := do
       | .ok response =>
         match response.result? with
         | some result => do
-          match LeanSerde.deserialize result with
+          match ← LeanSerde.deserialize result with
           | .ok ((50, 50) : Nat × Nat) => pure ()
           | .ok val => return assert false s!"StateT returned wrong value: {val}"
           | .error err => return assert false s!"StateT deserialization failed: {err}"
@@ -199,7 +199,7 @@ def testStateReaderMonads (_ : Unit) : IO TestResult := do
       | .error msg => return assert false s!"StateT failed: {msg}"
   | none => return assert false "StateT handler not found"
 
-  let environment := LeanSerde.serialize (5 : Nat)
+  let environment := ← LeanSerde.serialize (5 : Nat)
   let readerParams := Lean.Json.arr #[environment, param1, param2]
 
   match registry.get? "testRPCAddReaderT" with
@@ -208,7 +208,7 @@ def testStateReaderMonads (_ : Unit) : IO TestResult := do
       | .ok response =>
         match response.result? with
         | some result => do
-          match LeanSerde.deserialize result with
+          match ← LeanSerde.deserialize result with
           | .ok (45 : Nat) => return assert true "StateT and ReaderT handlers work"
           | .ok val => return assert false s!"ReaderT returned wrong value: {val}"
           | .error err => return assert false s!"ReaderT deserialization failed: {err}"

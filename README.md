@@ -54,7 +54,7 @@ partial def collatzSequence (n : Nat) : IO (Except String (List Nat)) := do
 init_RPC
 
 def main : IO Unit := do
-  IO.println "Try:\ncurl -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"collatzSequence\",\"params\":[50],\"id\":1}' http://localhost:8080"
+  IO.println "Try:\ncurl -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"collatzSequence\",\"params\":[50],\"id\":1}' http://localhost:8080\n"
 
   -- Start server (buildRPC is created during init_RPC)
   startRPCServer { port := 8080 } buildRPC
@@ -73,7 +73,7 @@ Functions are exposed as RPC methods using the `@[rpc]` attribute. Supported sig
 - Sandboxed: `CoreM β`, `MetaM β`, `TermElabM β`, `CommandElabM β`
 - Utilities: `Task β`
 
-Note: Sandboxed monads execute in isolated environments without access to the current Lean context or imports. Very limited...
+Note: Sandboxed monads execute in isolated environments without access to the current Lean context. Limited and relatively slow.
 
 **Examples**: `String → IO String`, `Nat → List α → CoreM Bool`, `StateT Nat IO String`
 

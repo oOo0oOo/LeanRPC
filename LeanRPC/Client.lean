@@ -26,7 +26,7 @@ def callRPC [LeanSerde.Serializable β]
     let requestJson := (Lean.toJson request).compress
     let httpResult ← makeJsonHttpRequest config requestJson
 
-    let result : Except String β := do
+    let parseResult : Except String Lean.Json := do
       let responseBody ← httpResult.bind extractResponseBody
       let jsonResponse ← Lean.Json.parse responseBody
       let rpcResponse : JsonRPCResponse ← Lean.fromJson? jsonResponse
@@ -39,10 +39,12 @@ def callRPC [LeanSerde.Serializable β]
 
       match rpcResponse.result? with
       | none => throw "No result in response"
-      | some resultJson =>
-        LeanSerde.deserialize resultJson
+      | some resultJson => pure resultJson
 
-    return result
+    match parseResult with
+    | .ok resultJson => LeanSerde.deserialize resultJson
+    | .error err => return .error err
+
   catch e =>
     return .error e.toString
 

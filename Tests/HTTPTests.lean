@@ -283,8 +283,8 @@ def testFullServerIntegration (_ : Unit) : IO TestResult := do
   -- Now make real HTTP calls to test the server
   try
     -- Test 1: Valid add request - need to serialize parameters properly
-    let data1 : Lean.Json := LeanSerde.serialize (5 : Nat)
-    let data2 : Lean.Json := LeanSerde.serialize (3 : Nat)
+    let data1 : Lean.Json := ← LeanSerde.serialize (5 : Nat)
+    let data2 : Lean.Json := ← LeanSerde.serialize (3 : Nat)
     let param1 := data1.compress
     let param2 := data2.compress
     let addRequest := "{\"jsonrpc\":\"2.0\",\"method\":\"add\",\"params\":[" ++ param1 ++ "," ++ param2 ++ "],\"id\":1}"
@@ -320,7 +320,7 @@ def testFullServerIntegration (_ : Unit) : IO TestResult := do
       | .error _ => false
 
     -- Test 4: Echo function with string parameter - serialize the string parameter
-    let data : Lean.Json := LeanSerde.serialize "Hello World"
+    let data : Lean.Json := ← LeanSerde.serialize "Hello World"
     let echoParam := data.compress
     let echoRequest := "{\"jsonrpc\":\"2.0\",\"method\":\"echo\",\"params\":[" ++ echoParam ++ "],\"id\":3}"
     let echoResult ← makeJsonHttpRequest testConfig echoRequest

@@ -14,7 +14,7 @@ partial def collatzSequence (n : Nat) : IO (Except String (List Nat)) := do
 init_RPC
 
 def main : IO Unit := do
-  IO.println "Try:\ncurl -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"collatzSequence\",\"params\":[50],\"id\":1}' http://localhost:8080"
+  IO.println "Try:\ncurl -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"collatzSequence\",\"params\":[50],\"id\":1}' http://localhost:8080\n"
 
   -- Start server (buildRPC is created during init_RPC)
   startRPCServer { port := 8080 } buildRPC
