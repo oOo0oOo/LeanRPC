@@ -84,8 +84,7 @@ def extractJsonBody (data : String) : Except (Nat × String) String := do
   match contentLength? with
   | none => throw (411, "Missing or invalid Content-Length header")
   | some contentLength =>
-    if body.length < contentLength then
-      throw (400, s!"Incomplete body: expected {contentLength} bytes, got {body.length}")
+    -- We don't care about the exact Content-Length: Many UTF-8 encodings in Lean code.
     return body.take contentLength
 
 private def logRequest (remoteAddr : String) (logMessage : String) (status : Nat) : IO Unit := do
