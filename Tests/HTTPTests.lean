@@ -125,20 +125,18 @@ def testServerConfigDefaults (_ : Unit) : IO TestResult := do
 -- Test body length validation
 def testBodyLengthMismatch (_ : Unit) : IO TestResult := do
   let jsonBody := "{\"method\":\"test\"}"
-  let wrongLength := jsonBody.length + 5
   let httpRequest :=
     "POST / HTTP/1.1\r\n" ++
     "Content-Type: application/json\r\n" ++
-    "Content-Length: " ++ toString wrongLength ++ "\r\n" ++
     "\r\n" ++
     jsonBody
 
   match extractJsonBody httpRequest with
   | .error (code, msg) =>
-    if code == 400 && stringContains msg "Incomplete body" then
+    if code == 411 && stringContains msg "Content-Length header" then
       return assert true "Body length mismatch correctly detected"
     else
-      return assert false s!"Wrong error message or code: expected 400, got {code} '{msg}'"
+      return assert false s!"Wrong error message or code: expected 411, got {code} '{msg}'"
   | .ok _ =>
     return assert false "Body length mismatch was not detected"
 

@@ -22,7 +22,7 @@ def getHTTPStatusMessage (code : Nat) : String :=
 
 -- SERVER
 structure ServerConfig where
-  port : Nat := 8080
+  port : UInt16 := 8080
   host : String := "127.0.0.1"
   maxBodySize : Nat := 1024 * 1024
   logging: Bool := true
